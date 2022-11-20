@@ -1,16 +1,17 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
-	"github.com/Konab/go-diplom-1/loyalty-system/config"
+	"github.com/costynus/loyalty-system/config"
+	"github.com/costynus/loyalty-system/internal/app"
 )
 
 func main() {
 	cfg, err := config.NewConfig()
 	if err != nil {
-		fmt.Println(err)
+        log.Fatalf("Config error: %s", err)
 	}
 
-	fmt.Println(cfg)
+    app.Run(cfg)
 }
