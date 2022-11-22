@@ -1,5 +1,4 @@
 package config
-
 import (
 	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -29,6 +28,7 @@ type (
     PG struct {
         PollMax int `env-required:"true" yaml:"pool_max" env:"PG_POOL_MAX"`
         URL string `env-required:"true" env:"DATABASE_DSN"`
+        MigDir string `env-required:"true" env:"MIG_DIR" yaml:"migration_dir"`
     }
 )
 
@@ -37,7 +37,6 @@ func NewConfig() (*Config, error) {
 
 	err := cleanenv.ReadConfig("./config/config.yaml", cfg)
 	if err != nil {
-        fmt.Println("Hello from config error")
 		return nil, fmt.Errorf("config: error: %w", err)
 	}
 

@@ -12,18 +12,25 @@ services:
       POSTGRES_DB: 'postgres'
     ports:
       - 5432:5432
+    network:
+      - com
 
   app:
     build: .
     container_name: app
     image: app
-    enviroment:
+    environment:
       DATABASE_DSN: 'postgres://user:pass@postgres:5432/postgres?sslmode=disable'
       ADDRESS: ':8080'
     ports:
       - 8080:8080
     depends_on:
       - postgres
+    network:
+      - com
 
 volumes:
   pg-data:
+
+networks:
+  com: {}

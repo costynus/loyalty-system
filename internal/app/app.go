@@ -16,6 +16,10 @@ import (
 func Run(cfg *config.Config){
     l := logger.New(cfg.Log.Level)
 
+    err := migration(cfg.PG.URL, cfg.PG.MigDir)
+    if err != nil {
+        l.Fatal(fmt.Errorf("app - Run - migration: %w", err))
+    }
     pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.PollMax))
     if err != nil {
         l.Fatal(fmt.Errorf("app - Run - postgres.New: %w", err))

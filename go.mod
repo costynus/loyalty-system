@@ -8,6 +8,8 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/ilyakaznacheev/cleanenv v1.4.0
 	github.com/jackc/pgx/v4 v4.17.2
+	github.com/lib/pq v1.10.2
+	github.com/pressly/goose v2.7.0+incompatible
 	github.com/rs/zerolog v1.28.0
 )
 
@@ -26,6 +28,7 @@ require (
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6 // indirect
 	golang.org/x/text v0.3.7 // indirect
