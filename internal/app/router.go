@@ -2,16 +2,23 @@ package app
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/costynus/loyalty-system/internal/entity"
 	"github.com/costynus/loyalty-system/internal/usecase"
 	"github.com/costynus/loyalty-system/pkg/logger"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
+	"github.com/theplant/luhn"
 )
 
 func NewRouter(handler *chi.Mux, uc usecase.Gophermart, l logger.Interface) {
+    tokenAuth := jwtauth.New("HS256", []byte("secret"), nil)
+
+
     handler.Use(middleware.Logger)
 
     // checker
@@ -19,13 +26,145 @@ func NewRouter(handler *chi.Mux, uc usecase.Gophermart, l logger.Interface) {
     handler.Get("/ping", pingHandler(uc, l))
 
     // auth
+    handler.Route("/", func(r chi.Router) {
+        r.Post("/api/user/register", registrationUser(uc, l, tokenAuth))
+        r.Post("/api/user/login", loginUser(uc, l, tokenAuth))
+    })
+
+    // Protected routes
     handler.Route("/api/user", func(r chi.Router) {
-        r.Post("/register", registrationUser(uc, l))
-        r.Post("/login", loginUser(uc, l))
+        r.Use(jwtauth.Verifier(tokenAuth))
+        r.Use(jwtauth.Authenticator)
+
+        r.Post("/orders", uploadOrder(uc, l, tokenAuth))
+        r.Get("/orders", getOrderInfoList(uc, l, tokenAuth))
+        
+        r.Get("/balance", getCurrentBalance(uc, l, tokenAuth))
+        r.Post("/balance/withdraw", withdraw(uc, l, tokenAuth))
+
+        r.Get("/withdrawals", getWithdrawInfoList(uc, l, tokenAuth))
     })
 }
 
-func registrationUser(uc usecase.Gophermart, l logger.Interface) http.HandlerFunc {
+func getWithdrawInfoList(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTAuth) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        _, claims, _ := jwtauth.FromContext(r.Context())
+        withdrawList, err := uc.GetWithdrawList(r.Context(), claims["user_id"].(int))
+        if err != nil {
+            errorHandler(w, err)
+            return
+        }
+
+        jsonResp, err := json.Marshal(withdrawList)
+        if err != nil {
+            l.Error(err)
+            errorHandler(w, err)
+            return
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        w.Write(jsonResp)
+    }
+}
+
+func withdraw(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTAuth) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        var withdrawal entity.Withdrawal
+
+        if err := json.NewDecoder(r.Body).Decode(&withdrawal); err != nil {
+            http.Error(w, "bad request", http.StatusBadRequest)
+            return
+        }
+
+        _, claims, _ := jwtauth.FromContext(r.Context())
+        err := uc.Withdraw(r.Context(), claims["user_id"].(int), withdrawal)
+        if err != nil {
+            errorHandler(w, err)
+            return
+        }
+
+        w.WriteHeader(http.StatusOK)
+    }
+}
+
+func getCurrentBalance(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTAuth) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        _, claims, _ := jwtauth.FromContext(r.Context())
+        balance, err := uc.GetCurrentBalance(r.Context(), claims["user_id"].(int))
+        if err != nil {
+            errorHandler(w, err)
+            return
+        }
+
+        jsonResp, err := json.Marshal(balance)
+        if err != nil {
+            l.Error(err)
+            errorHandler(w, err)
+            return
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        w.Write(jsonResp)
+    }
+}
+
+func getOrderInfoList(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTAuth) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        _, claims, _ := jwtauth.FromContext(r.Context())
+        orderList, err := uc.GetOrderList(r.Context(), claims["user_id"].(int))
+        if err != nil {
+            errorHandler(w, err)
+            return
+        }
+
+        if orderList == nil {
+            http.Error(w, "empty order list", http.StatusNoContent)
+            return
+        }
+
+        jsonResp, err := json.Marshal(orderList)
+        if err != nil {
+            l.Error(err)
+            errorHandler(w, err)
+            return
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        w.Write(jsonResp)
+    }
+}
+
+func uploadOrder(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTAuth) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        body, err := io.ReadAll(r.Body)
+        if err != nil {
+            http.Error(w, "bad request", http.StatusBadRequest)
+            return
+        }
+
+        order_num, _ := strconv.Atoi(string(body))  
+        if !luhn.Valid(order_num){
+            http.Error(w, "bad request", http.StatusUnprocessableEntity)
+            return
+        }
+
+        _, claims, _ := jwtauth.FromContext(r.Context())
+        isDouble, err := uc.UploadOrder(r.Context(), claims["user_id"].(int), strconv.Itoa(order_num))
+        if err != nil {
+            errorHandler(w, err)
+            return
+        }
+
+        if isDouble {
+            w.WriteHeader(http.StatusOK)
+        } else {
+            w.WriteHeader(http.StatusAccepted)
+        }
+    }
+}
+
+
+func registrationUser(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTAuth) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         var userAuth entity.UserAuth
 
@@ -34,19 +173,19 @@ func registrationUser(uc usecase.Gophermart, l logger.Interface) http.HandlerFun
             return
         }
 
-        if err := uc.CreateNewUser(r.Context(), userAuth); err != nil {
+        user, err := uc.CreateNewUser(r.Context(), userAuth)
+        if err != nil {
             errorHandler(w, err)
             return
         }
 
-        // TODO: generate jwtToken
-        // TODO: set jwtToken
-
+        _, tokenString, _ := tokenAuth.Encode(map[string]interface{}{"user_id": user.ID})
+        w.Header().Set("Authorization", "Bearer " + tokenString)
         w.WriteHeader(http.StatusOK)
     }
 }
 
-func loginUser(uc usecase.Gophermart, l logger.Interface) http.HandlerFunc {
+func loginUser(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTAuth) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request){
         var userAuth entity.UserAuth
 
@@ -55,14 +194,14 @@ func loginUser(uc usecase.Gophermart, l logger.Interface) http.HandlerFunc {
             return
         }
 
-        if err := uc.CheckUser(r.Context(), userAuth); err != nil {
+        user, err := uc.CheckUser(r.Context(), userAuth)
+        if err != nil {
             errorHandler(w, err)
             return
         }
 
-        // TODO: generate jwtToken
-        // TODO: set jwtToken
-
+        _, tokenString, _ := tokenAuth.Encode(map[string]interface{}{"user_id": user.ID})
+        w.Header().Set("Authorization", "Bearer " + tokenString)
         w.WriteHeader(http.StatusOK)
     }
 }
@@ -75,7 +214,6 @@ func healthzHandler() http.HandlerFunc{
 func pingHandler(uc usecase.Gophermart, l logger.Interface) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         if err := uc.PingRepo(r.Context()); err != nil {
-            //l.Error(err),
             http.Error(w, "repo error", http.StatusInternalServerError)
             return
         }
