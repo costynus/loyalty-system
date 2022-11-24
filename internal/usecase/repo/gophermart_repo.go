@@ -78,11 +78,11 @@ func (r *GophermartRepo) GetUserWithLogin(ctx context.Context, login string) (en
     return dst[0], nil
 }
 
-func (r *GophermartRepo) GetOrderList(ctx context.Context, userId int) ([]entity.Order, error) {
+func (r *GophermartRepo) GetOrderList(ctx context.Context, userID int) ([]entity.Order, error) {
     sql, args, err := r.Builder.
         Select("order_number", "status", "accrual", "uploaded_at").
         From("public.order").
-        Where(sq.Eq{"user_id": userId}).
+        Where(sq.Eq{"user_id": userID}).
         ToSql()
     if err != nil {
         return nil, fmt.Errorf("gophermartRepo - GetOrderList - r.Builder: %w", err)
@@ -95,11 +95,11 @@ func (r *GophermartRepo) GetOrderList(ctx context.Context, userId int) ([]entity
     return dst, nil
 }
 
-func (r *GophermartRepo) GetCurrentBalance(ctx context.Context, userId int) (entity.Balance, error) {
+func (r *GophermartRepo) GetCurrentBalance(ctx context.Context, userID int) (entity.Balance, error) {
     sql, args, err := r.Builder.
         Select("balance", "withdrawal").
         From("public.balance").
-        Where(sq.Eq{"user_id": userId}).
+        Where(sq.Eq{"user_id": userID}).
         ToSql()
     if err != nil {
         return entity.Balance{}, fmt.Errorf("GophermartRepo - GetcurrentBalance - r.Builder: %w", err)
@@ -117,21 +117,21 @@ func (r *GophermartRepo) GetCurrentBalance(ctx context.Context, userId int) (ent
     return dst[0], nil
 }
 
-func (r *GophermartRepo) UpdateBalance(ctx context.Context, userId int, value decimal.Decimal) error {
+func (r *GophermartRepo) UpdateBalance(ctx context.Context, userID int, value decimal.Decimal) error {
     // TODO: code me pls
     return nil
 }
 
-func (r *GophermartRepo) AddWithdrawal(ctx context.Context, userId int, orderNum string, value decimal.Decimal) error {
+func (r *GophermartRepo) AddWithdrawal(ctx context.Context, userID int, orderNum string, value decimal.Decimal) error {
     // TODO: code me pls
     return nil
 }
 
-func (r *GophermartRepo) GetWithdrawalList(ctx context.Context, userId int, orderNum string) ([]entity.Withdraw, error) {
+func (r *GophermartRepo) GetWithdrawalList(ctx context.Context, userID int, orderNum string) ([]entity.Withdraw, error) {
     sql, args, err := r.Builder.
         Select("order_num", "sum_number", "updated_at").
         From("public.withdrawal").
-        Where(sq.Eq{"user_id": userId}).
+        Where(sq.Eq{"user_id": userID}).
         ToSql()
     if err != nil {
         return nil, fmt.Errorf("GophermartRepo - GetWithdrawalList - r.Builder: %w", err)
