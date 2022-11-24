@@ -26,13 +26,13 @@ func NewRouter(handler *chi.Mux, uc usecase.Gophermart, l logger.Interface) {
     handler.Get("/ping", pingHandler(uc, l))
 
     // auth
-    handler.Route("/", func(r chi.Router) {
+    handler.Group(func(r chi.Router) {
         r.Post("/api/user/register", registrationUser(uc, l, tokenAuth))
         r.Post("/api/user/login", loginUser(uc, l, tokenAuth))
     })
 
     // Protected routes
-    handler.Route("/api/user", func(r chi.Router) {
+    handler.Group(func(r chi.Router) {
         r.Use(jwtauth.Verifier(tokenAuth))
         r.Use(jwtauth.Authenticator)
 
@@ -142,14 +142,14 @@ func uploadOrder(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.J
             return
         }
 
-        order_num, _ := strconv.Atoi(string(body))  
-        if !luhn.Valid(order_num){
+        orderNum, _ := strconv.Atoi(string(body))  
+        if !luhn.Valid(orderNum){
             http.Error(w, "bad request", http.StatusUnprocessableEntity)
             return
         }
 
         _, claims, _ := jwtauth.FromContext(r.Context())
-        isDouble, err := uc.UploadOrder(r.Context(), claims["user_id"].(int), strconv.Itoa(order_num))
+        isDouble, err := uc.UploadOrder(r.Context(), claims["user_id"].(int), strconv.Itoa(orderNum))
         if err != nil {
             errorHandler(w, err)
             return
@@ -169,12 +169,14 @@ func registrationUser(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwta
         var userAuth entity.UserAuth
 
         if err := json.NewDecoder(r.Body).Decode(&userAuth); err != nil {
+            l.Error(err)
             http.Error(w, "bad request", http.StatusBadRequest)
             return
         }
 
         user, err := uc.CreateNewUser(r.Context(), userAuth)
         if err != nil {
+            l.Error(err)
             errorHandler(w, err)
             return
         }

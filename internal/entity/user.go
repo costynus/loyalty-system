@@ -10,6 +10,6 @@ type (
     User struct {
         ID int `json:"id" db:"id"`
         Login string `json:"login" db:"login"`
-        Password_hash string `db:"password_hash"`
+        PasswordHash string `db:"password_hash"`
     }
 )

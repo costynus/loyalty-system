@@ -1,6 +1,9 @@
 package config
+
 import (
+	"flag"
 	"fmt"
+
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
@@ -13,8 +16,9 @@ type (
 	}
 
 	App struct {
-		Name    string `env-required:"true" yaml:"name" env:"APP_NAME"`
+		Name    string `env-required:"true" yaml:"name" env:"RUN_ADDRESS"`
 		Version string `env-required:"true" yaml:"version" env:"APP_VERSION"`
+        AccrualSystemAddress string `yaml:"accreal_system_address" env:"ACCRUAL_SYSTEM_ADDRESS"`
 	}
 
     HTTP struct {
@@ -27,13 +31,17 @@ type (
 
     PG struct {
         PollMax int `env-required:"true" yaml:"pool_max" env:"PG_POOL_MAX"`
-        URL string `env-required:"true" env:"DATABASE_DSN"`
+        URL string `env-required:"true" env:"DATABASE_URI"`
         MigDir string `env-required:"true" env:"MIG_DIR" yaml:"migration_dir"`
     }
 )
 
 func NewConfig() (*Config, error) {
 	cfg := &Config{}
+
+    flag.StringVar(&cfg.HTTP.Address, "a", cfg.HTTP.Address, "address to listen on")
+    flag.StringVar(&cfg.PG.URL, "d", cfg.PG.URL, "db url")
+    flag.StringVar(&cfg.App.AccrualSystemAddress, "r", cfg.App.AccrualSystemAddress, "accreal system address")
 
 	err := cleanenv.ReadConfig("./config/config.yaml", cfg)
 	if err != nil {

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/costynus/loyalty-system/internal/entity"
 	"github.com/costynus/loyalty-system/pkg/password"
@@ -28,7 +29,10 @@ func (uc *GophermartUseCase) CreateNewUser(ctx context.Context, userAuth entity.
         return entity.User{}, err
     }
 
-    _, err = uc.repo.GetUserWithLogin(ctx, userAuth.Login)
+    userNew, err := uc.repo.GetUserWithLogin(ctx, userAuth.Login)
+    fmt.Println(userNew)
+    fmt.Println(err)
+    
     if err == nil {
         return entity.User{}, ErrConflict
     }
@@ -61,27 +65,27 @@ func (uc *GophermartUseCase) CheckUser(ctx context.Context, userAuth entity.User
     return user, nil
 }
 
-func (uc *GophermartUseCase) UploadOrder(ctx context.Context, user_id int, order_num string) (bool, error) {
+func (uc *GophermartUseCase) UploadOrder(ctx context.Context, userId int, orderNum string) (bool, error) {
     // TODO: code me pls
     return false, nil
 }
 
 
-func (uc *GophermartUseCase) GetOrderList(ctx context.Context, user_id int) ([]entity.Order, error) {
-    orderList, err := uc.repo.GetOrderList(ctx, user_id)
+func (uc *GophermartUseCase) GetOrderList(ctx context.Context, userId int) ([]entity.Order, error) {
+    orderList, err := uc.repo.GetOrderList(ctx, userId)
     return orderList, err
 }
 
 
-func (uc *GophermartUseCase) GetCurrentBalance(ctx context.Context, user_id int) (entity.Balance, error) {
-    balance, err := uc.repo.GetCurrentBalance(ctx, user_id)
+func (uc *GophermartUseCase) GetCurrentBalance(ctx context.Context, userId int) (entity.Balance, error) {
+    balance, err := uc.repo.GetCurrentBalance(ctx, userId)
     return balance, err
 }
 
 
-func (uc *GophermartUseCase) Withdraw(ctx context.Context, user_id int, withdrawal entity.Withdrawal) error {
+func (uc *GophermartUseCase) Withdraw(ctx context.Context, userId int, withdrawal entity.Withdrawal) error {
     return uc.repo.WithinTransaction(ctx, func(txCtx context.Context) error {
-        balance, err := uc.repo.GetCurrentBalance(txCtx, user_id)
+        balance, err := uc.repo.GetCurrentBalance(txCtx, userId)
         if err != nil {
             return err
         }
@@ -90,17 +94,17 @@ func (uc *GophermartUseCase) Withdraw(ctx context.Context, user_id int, withdraw
             return ErrPaymentRequired
         }
 
-        withdrawalList, err := uc.repo.GetWithdrawalList(txCtx, user_id, withdrawal.Order)
+        withdrawalList, err := uc.repo.GetWithdrawalList(txCtx, userId, withdrawal.Order)
         if withdrawalList != nil {
             return ErrUnprocessableEntity
         }
 
-        err = uc.repo.UpdateBalance(txCtx, user_id, withdrawal.Sum)
+        err = uc.repo.UpdateBalance(txCtx, userId, withdrawal.Sum)
         if err != nil {
             return err
         }
 
-        err = uc.repo.AddWithdrawal(txCtx, user_id, withdrawal.Order, withdrawal.Sum)
+        err = uc.repo.AddWithdrawal(txCtx, userId, withdrawal.Order, withdrawal.Sum)
         if err != nil {
             return err
         }
@@ -110,7 +114,7 @@ func (uc *GophermartUseCase) Withdraw(ctx context.Context, user_id int, withdraw
 }
 
 
-func (uc *GophermartUseCase) GetWithdrawList(ctx context.Context, user_id int) ([]entity.Withdraw, error) {
-    withdrawalList, err := uc.repo.GetWithdrawalList(ctx, user_id, "")
+func (uc *GophermartUseCase) GetWithdrawList(ctx context.Context, userId int) ([]entity.Withdraw, error) {
+    withdrawalList, err := uc.repo.GetWithdrawalList(ctx, userId, "")
     return withdrawalList, err
 }
