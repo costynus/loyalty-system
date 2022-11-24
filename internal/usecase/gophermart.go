@@ -95,6 +95,9 @@ func (uc *GophermartUseCase) Withdraw(ctx context.Context, userID int, withdrawa
         }
 
         withdrawalList, err := uc.repo.GetWithdrawalList(txCtx, userID, withdrawal.Order)
+        if err != nil {
+            return err
+        }
         if withdrawalList != nil {
             return ErrUnprocessableEntity
         }
