@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -112,6 +113,8 @@ func getOrderInfoList(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwta
     return func(w http.ResponseWriter, r *http.Request) {
         _, claims, _ := jwtauth.FromContext(r.Context())
         orderList, err := uc.GetOrderList(r.Context(), int(claims["user_id"].(float64)))
+        fmt.Println(orderList)
+        fmt.Println(err)
         if err != nil {
             l.Error(err)
             errorHandler(w, err)
@@ -123,6 +126,7 @@ func getOrderInfoList(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwta
             return
         }
 
+        fmt.Println(len(orderList))
         jsonResp, err := json.Marshal(orderList)
         if err != nil {
             l.Error(err)

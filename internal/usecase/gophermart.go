@@ -132,7 +132,6 @@ func (uc *GophermartUseCase) CheckUser(ctx context.Context, userAuth entity.User
 
 func (uc *GophermartUseCase) UploadOrder(ctx context.Context, userID int, orderNum string) (bool, error) {
     order, err := uc.repo.GetOrderByOrderNumber(ctx, orderNum)
-    fmt.Println(order, err, err == repo.ErrNotFound)
     switch err {
     case nil:
         if order.UserID == userID {
