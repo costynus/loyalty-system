@@ -58,7 +58,7 @@ func (r *GophermartRepo) UpdateOrderStatus(ctx context.Context, orderNumber, sta
 
 func (r *GophermartRepo) GetOrderByOrderNumber(ctx context.Context, orderNumber string) (entity.Order, error) {
     sql, args, err := r.Builder.
-        Select("id", "order_number", "status", "accrual", "uploaded_at", "user_id").
+        Select("order_number", "status", "accrual", "uploaded_at", "user_id").
         From("public.order").
         Where(sq.Eq{"order_number": orderNumber}).
         ToSql()

@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/costynus/loyalty-system/internal/entity"
@@ -133,20 +132,23 @@ func (uc *GophermartUseCase) CheckUser(ctx context.Context, userAuth entity.User
 
 func (uc *GophermartUseCase) UploadOrder(ctx context.Context, userID int, orderNum string) (bool, error) {
     order, err := uc.repo.GetOrderByOrderNumber(ctx, orderNum)
-    if err != nil && !errors.Is(err, repo.ErrNotFound) {
-        return false, fmt.Errorf("GophermartUseCase - UploadOrder - uc.repo.GetOrderByOrderNumber: %w", err)
-    }
-    if !errors.Is(err, repo.ErrNotFound) && order.UserID == userID {
-        return true, nil
-    } else if !errors.Is(err, repo.ErrNotFound) && order.UserID != userID {
+    fmt.Println(order, err, err == repo.ErrNotFound)
+    switch err {
+    case nil:
+        if order.UserID == userID {
+            return true, nil
+        }
         return false, ErrConflict
-    }
+    case repo.ErrNotFound:
+        err = uc.repo.CreateOrder(ctx, userID, orderNum)
+        if err != nil {
+            return false, fmt.Errorf("GophermartUseCase - UploadOrder - uc.repo.CreateOrder: %w", err)
+        }
+        uc.orderCh <- orderNum
+    default:
+        return false, fmt.Errorf("GophermartUseCase - UploadOrder - uc.repo.GetOrderByOrderNumber: %w", err)
 
-    err = uc.repo.CreateOrder(ctx, userID, orderNum)
-    if err != nil {
-        return false, fmt.Errorf("GophermartUseCase - UploadOrder - uc.repo.CreateOrder: %w", err)
     }
-    uc.orderCh <- orderNum
 
     return false, nil
 }
