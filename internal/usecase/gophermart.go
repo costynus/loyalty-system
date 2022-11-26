@@ -2,20 +2,86 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/costynus/loyalty-system/internal/entity"
+	"github.com/costynus/loyalty-system/internal/usecase/repo"
+	"github.com/costynus/loyalty-system/internal/usecase/webapi"
 	"github.com/costynus/loyalty-system/pkg/password"
 )
 
 type GophermartUseCase struct {
     repo GophermartRepo
+    webAPI GophermartWebAPI
+    orderCh chan <- string
 }
 
-func New(r GophermartRepo) *GophermartUseCase{
-    return &GophermartUseCase{
+func New(r GophermartRepo, w GophermartWebAPI, workersCount int) *GophermartUseCase{
+    orderCh := make(chan string)
+    uc := &GophermartUseCase{
         repo: r,
+        webAPI: w,
+        orderCh: orderCh,
     }
+
+    for i := 0; i < workersCount; i++ {
+        go func() {
+            for orderNumber := range orderCh {
+                err := uc.ProcessOrder(orderNumber)
+                switch err {
+                case webapi.ErrTooManyRequests:
+                    orderCh <- orderNumber
+                }
+            }
+        }()
+    }
+
+    return uc
+}
+
+func (uc *GophermartUseCase) ProcessOrder(orderNumber string) error {
+    err := uc.repo.UpdateOrderStatus(context.TODO(), orderNumber, "PROCESSING")
+    if err != nil {
+        return fmt.Errorf("GophermartUseCase - ProcessOrder - uc.repo.UpdateOrderStatus: %w", err)
+    }
+    order, err := uc.webAPI.GetOrderInfo(orderNumber)
+    switch err {
+    case webapi.ErrInternalServerError:
+        err = uc.repo.UpdateOrderStatus(context.TODO(), orderNumber, "INVALID")
+        if err != nil {
+            return fmt.Errorf("GophermartUseCase - ProcessOrder - uc.repo.UpdateOrderStatus: %w", err)
+        }
+        return err
+    case webapi.ErrTooManyRequests:
+        return err
+    default:
+        if err != nil {
+            return err
+        }
+        addOrder, err := uc.repo.GetOrderByOrderNumber(context.TODO(), orderNumber)
+        if err != nil {
+            return fmt.Errorf("GophermartUseCase - ProcessOrder - uc.repo.GetOrderByOrderNumber: %w", err)
+        }
+        order.UserID = addOrder.UserID
+        err = uc.repo.UpdateOrderStatus(context.TODO(), orderNumber, "PROCESSED")
+        if err != nil {
+            return fmt.Errorf("GophermartUseCase - ProcessOrder - uc.repo.UpdateOrderStatus: %w", err)
+        }
+        err = uc.repo.UpdateOrderAccrual(context.TODO(), orderNumber, order.Accrual)
+        if err != nil {
+            return fmt.Errorf("GophermartUseCase - ProcessOrder - uc.repo.UpdateOrderAccrual: %w", err)
+        }
+        balance, err := uc.repo.GetCurrentBalance(context.TODO(), order.UserID)
+        if err != nil {
+            return fmt.Errorf("GophermartUseCase - ProcessOrder - uc.repo.GetCurrentBalance: %w", err)
+        }
+        err = uc.repo.UpdateBalance(context.TODO(), order.UserID, balance.Current.Add(order.Accrual), balance.Withdraw)
+        if err != nil {
+            return fmt.Errorf("GophermartUseCase - ProcessOrder - uc.repo.UpdateBalance: %w", err)
+        }
+    }
+    return nil
 }
 
 func (uc *GophermartUseCase) PingRepo(ctx context.Context) error {
@@ -66,7 +132,22 @@ func (uc *GophermartUseCase) CheckUser(ctx context.Context, userAuth entity.User
 }
 
 func (uc *GophermartUseCase) UploadOrder(ctx context.Context, userID int, orderNum string) (bool, error) {
-    // TODO: code me pls
+    order, err := uc.repo.GetOrderByOrderNumber(ctx, orderNum)
+    if err != nil && !errors.Is(err, repo.ErrNotFound) {
+        return false, fmt.Errorf("GophermartUseCase - UploadOrder - uc.repo.GetOrderByOrderNumber: %w", err)
+    }
+    if !errors.Is(err, repo.ErrNotFound) && order.UserID == userID {
+        return true, nil
+    } else if !errors.Is(err, repo.ErrNotFound) && order.UserID != userID {
+        return false, ErrConflict
+    }
+
+    err = uc.repo.CreateOrder(ctx, userID, orderNum)
+    if err != nil {
+        return false, fmt.Errorf("GophermartUseCase - UploadOrder - uc.repo.CreateOrder: %w", err)
+    }
+    uc.orderCh <- orderNum
+
     return false, nil
 }
 
@@ -102,7 +183,7 @@ func (uc *GophermartUseCase) Withdraw(ctx context.Context, userID int, withdrawa
             return ErrUnprocessableEntity
         }
 
-        err = uc.repo.UpdateBalance(txCtx, userID, withdrawal.Sum)
+        err = uc.repo.UpdateBalance(txCtx, userID, balance.Current.Sub(withdrawal.Sum), balance.Withdraw.Add(withdrawal.Sum))
         if err != nil {
             return err
         }

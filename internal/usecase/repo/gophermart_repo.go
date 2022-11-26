@@ -23,6 +23,78 @@ func (r *GophermartRepo) Ping(ctx context.Context) error {
     return r.Pool.Ping(ctx)
 }
 
+func (r *GophermartRepo) UpdateOrderAccrual(ctx context.Context, orderNumber string, accrual decimal.Decimal) error {
+    sql, args, err := r.Builder.
+        Update("public.order").
+        Set("accrual", accrual).
+        Where(sq.Eq{"order_number": orderNumber}).
+        ToSql()
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - UpdateOrderAccrual - r.Builder: %w", err)
+    }
+
+    _, err = r.Pool.Exec(ctx, sql, args...)
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - UpdateOrderAccrual - r.Pool.Exec: %w", err)
+    }
+    return nil
+}
+
+func (r *GophermartRepo) UpdateOrderStatus(ctx context.Context, orderNumber, status string) error {
+    sql, args, err := r.Builder.
+        Update("public.order").
+        Set("status", status).
+        Where(sq.Eq{"order_number": orderNumber}).
+        ToSql()
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - UpdateOrderStatus - r.builder: %w", err)
+    }
+    _, err = r.Pool.Exec(ctx, sql, args...)
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - UpdateOrderStatus - r.Pool.Exec: %w", err)
+    }
+    return nil
+}
+
+func (r *GophermartRepo) GetOrderByOrderNumber(ctx context.Context, orderNumber string) (entity.Order, error) {
+    sql, args, err := r.Builder.
+        Select("id", "order_number", "status", "accrual", "uploaded_at", "user_id").
+        From("public.order").
+        Where(sq.Eq{"order_number": orderNumber}).
+        ToSql()
+    if err != nil {
+        return entity.Order{}, fmt.Errorf("GophermartRepo - GetOrderByOrderNumber - r.Builder: %w", err)
+    }
+    
+    dst := make([]entity.Order, 0)
+    if err = pgxscan.Select(ctx, r.Pool, &dst, sql, args...); err != nil {
+        return entity.Order{}, fmt.Errorf("GophermartRepo - GetOrderByOrderNumber - pgxsan.Select: %w", err)
+    }
+
+    if len(dst) == 0 {
+        return entity.Order{}, ErrNotFound
+    }
+
+    return dst[0], nil
+}
+
+func (r *GophermartRepo) CreateOrder(ctx context.Context, userID int, orderNumber string) error {
+    sql, args, err := r.Builder.
+        Insert("public.order").
+        Columns("order_number", "user_id", "accrual").
+        Values(orderNumber, userID, 0).
+        ToSql()
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - CreateOrder - r.Builder: %w", err)
+    }
+
+    _, err = r.Pool.Exec(ctx, sql, args...)
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - CreateOrder - r.Pool.Exec: %w", err)
+    }
+
+    return nil
+}
 
 func (r *GophermartRepo) CreateUser(ctx context.Context, login, passwordHash string) (entity.User, error) {
     var user entity.User
@@ -117,13 +189,38 @@ func (r *GophermartRepo) GetCurrentBalance(ctx context.Context, userID int) (ent
     return dst[0], nil
 }
 
-func (r *GophermartRepo) UpdateBalance(ctx context.Context, userID int, value decimal.Decimal) error {
-    // TODO: code me pls
+func (r *GophermartRepo) UpdateBalance(ctx context.Context, userID int, balance, withdrawal decimal.Decimal) error {
+    sql, args, err := r.Builder.
+        Update("public.balance").
+        Set("balance", balance).
+        Set("withdrawal", withdrawal).
+        Where(sq.Eq{"user_id": userID}).
+        ToSql()
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - UpdateBalance - r.Builder: %w", err)
+    }
+
+    _, err = r.Pool.Exec(ctx, sql, args...)
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - UpdateBalance - r.Pool.Exec: %w", err)
+    }
     return nil
 }
 
 func (r *GophermartRepo) AddWithdrawal(ctx context.Context, userID int, orderNum string, value decimal.Decimal) error {
-    // TODO: code me pls
+    sql, args, err := r.Builder.
+        Insert("public.withdrawal").
+        Columns("order_number", "sum_number", "user_id").
+        Values(orderNum, value, userID).
+        ToSql()
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - AddWithdrawal - r.Builder: %w", err)
+    }
+
+    _, err = r.Pool.Exec(ctx, sql, args...)
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - AddWithdrawal - r.Pool.Exec: %w", err)
+    }
     return nil
 }
 

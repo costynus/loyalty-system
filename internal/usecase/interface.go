@@ -20,6 +20,8 @@ type (
         Withdraw(context.Context, int, entity.Withdrawal) error
 
         GetWithdrawList(context.Context, int) ([]entity.Withdraw, error)
+        ProcessOrder(string) error
+
     }
 
     GophermartRepo interface {
@@ -33,9 +35,18 @@ type (
         GetOrderList(context.Context, int) ([]entity.Order, error)
 
         GetCurrentBalance(context.Context, int) (entity.Balance, error)
-        UpdateBalance(context.Context, int, decimal.Decimal) error
+        UpdateBalance(context.Context, int, decimal.Decimal, decimal.Decimal) error
         AddWithdrawal(context.Context, int, string, decimal.Decimal) error 
 
         GetWithdrawalList(context.Context, int, string) ([]entity.Withdraw, error)
+
+        GetOrderByOrderNumber(context.Context, string) (entity.Order, error)
+        CreateOrder(context.Context, int, string) error
+        UpdateOrderStatus(context.Context, string, string) error
+        UpdateOrderAccrual(context.Context, string, decimal.Decimal) error
+    }
+
+    GophermartWebAPI interface {
+        GetOrderInfo(string) (entity.Order, error)
     }
 )

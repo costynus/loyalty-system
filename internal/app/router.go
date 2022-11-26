@@ -36,20 +36,20 @@ func NewRouter(handler *chi.Mux, uc usecase.Gophermart, l logger.Interface) {
         r.Use(jwtauth.Verifier(tokenAuth))
         r.Use(jwtauth.Authenticator)
 
-        r.Post("/orders", uploadOrder(uc, l, tokenAuth))
-        r.Get("/orders", getOrderInfoList(uc, l, tokenAuth))
+        r.Post("/api/user/orders", uploadOrder(uc, l, tokenAuth))
+        r.Get("/api/user/orders", getOrderInfoList(uc, l, tokenAuth))
         
-        r.Get("/balance", getCurrentBalance(uc, l, tokenAuth))
-        r.Post("/balance/withdraw", withdraw(uc, l, tokenAuth))
+        r.Get("/api/user/balance", getCurrentBalance(uc, l, tokenAuth))
+        r.Post("/api/user/balance/withdraw", withdraw(uc, l, tokenAuth))
 
-        r.Get("/withdrawals", getWithdrawInfoList(uc, l, tokenAuth))
+        r.Get("/api/user/withdrawals", getWithdrawInfoList(uc, l, tokenAuth))
     })
 }
 
 func getWithdrawInfoList(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTAuth) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         _, claims, _ := jwtauth.FromContext(r.Context())
-        withdrawList, err := uc.GetWithdrawList(r.Context(), claims["user_id"].(int))
+        withdrawList, err := uc.GetWithdrawList(r.Context(), int(claims["user_id"].(float64)))
         if err != nil {
             errorHandler(w, err)
             return
@@ -77,7 +77,7 @@ func withdraw(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTA
         }
 
         _, claims, _ := jwtauth.FromContext(r.Context())
-        err := uc.Withdraw(r.Context(), claims["user_id"].(int), withdrawal)
+        err := uc.Withdraw(r.Context(), int(claims["user_id"].(float64)), withdrawal)
         if err != nil {
             errorHandler(w, err)
             return
@@ -90,7 +90,7 @@ func withdraw(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTA
 func getCurrentBalance(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTAuth) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         _, claims, _ := jwtauth.FromContext(r.Context())
-        balance, err := uc.GetCurrentBalance(r.Context(), claims["user_id"].(int))
+        balance, err := uc.GetCurrentBalance(r.Context(), int(claims["user_id"].(float64)))
         if err != nil {
             errorHandler(w, err)
             return
@@ -111,7 +111,7 @@ func getCurrentBalance(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwt
 func getOrderInfoList(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTAuth) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         _, claims, _ := jwtauth.FromContext(r.Context())
-        orderList, err := uc.GetOrderList(r.Context(), claims["user_id"].(int))
+        orderList, err := uc.GetOrderList(r.Context(), int(claims["user_id"].(float64)))
         if err != nil {
             errorHandler(w, err)
             return
@@ -149,7 +149,7 @@ func uploadOrder(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.J
         }
 
         _, claims, _ := jwtauth.FromContext(r.Context())
-        isDouble, err := uc.UploadOrder(r.Context(), claims["user_id"].(int), strconv.Itoa(orderNum))
+        isDouble, err := uc.UploadOrder(r.Context(), int(claims["user_id"].(float64)), strconv.Itoa(orderNum))
         if err != nil {
             errorHandler(w, err)
             return

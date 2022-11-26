@@ -7,9 +7,11 @@ import (
 	"github.com/costynus/loyalty-system/config"
 	"github.com/costynus/loyalty-system/internal/usecase"
 	"github.com/costynus/loyalty-system/internal/usecase/repo"
+	"github.com/costynus/loyalty-system/internal/usecase/webapi"
 	"github.com/costynus/loyalty-system/pkg/logger"
 	"github.com/costynus/loyalty-system/pkg/postgres"
-    "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-resty/resty/v2"
 )
 
 
@@ -26,8 +28,13 @@ func Run(cfg *config.Config){
     }
     defer pg.Close()
 
+    client := resty.New().SetBaseURL(cfg.App.AccrualSystemAddress)
+    webAPI := webapi.New(client)
+
     uc := usecase.New(
         repo.New(pg),
+        webAPI,
+        cfg.App.WorkersCount,
     )
 
     handler := chi.NewRouter()
