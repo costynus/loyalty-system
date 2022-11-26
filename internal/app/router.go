@@ -113,6 +113,7 @@ func getOrderInfoList(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwta
         _, claims, _ := jwtauth.FromContext(r.Context())
         orderList, err := uc.GetOrderList(r.Context(), int(claims["user_id"].(float64)))
         if err != nil {
+            l.Error(err)
             errorHandler(w, err)
             return
         }
