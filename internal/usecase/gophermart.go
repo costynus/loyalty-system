@@ -56,10 +56,6 @@ func (uc *GophermartUseCase) ProcessOrder(orderNumber string) error {
             return fmt.Errorf("GophermartUseCase - ProcessOrder - uc.repo.GetOrderByOrderNumber: %w", err)
         }
         order.UserID = addOrder.UserID
-        err = uc.repo.UpdateOrderStatus(context.TODO(), orderNumber, order.Status)
-        if err != nil {
-            return fmt.Errorf("GophermartUseCase - ProcessOrder - uc.repo.UpdateOrderStatus: %w", err)
-        }
         switch order.Status {
         case "PROCESSING":
             err = uc.repo.UpdateOrderStatus(context.TODO(), orderNumber, order.Status)
