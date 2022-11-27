@@ -79,6 +79,23 @@ func (r *GophermartRepo) GetOrderByOrderNumber(ctx context.Context, orderNumber 
     return dst[0], nil
 }
 
+func (r *GophermartRepo) CreateUserBalance(ctx context.Context, userID int) error {
+    sql, args, err := r.Builder.
+        Insert("public.balance").
+        Columns("balance", "withdrawal", "user_id").
+        Values(0, 0, userID).
+        ToSql()
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - CreateUserBalance - r.Builder: %w", err)
+    }
+
+    _, err = r.Pool.Exec(ctx, sql, args...)
+    if err != nil {
+        return fmt.Errorf("GophermartRepo - CreateUserBalance - r.Pool.Exec: %w", err)
+    }
+    return nil
+}
+
 func (r *GophermartRepo) CreateOrder(ctx context.Context, userID int, orderNumber string) error {
     sql, args, err := r.Builder.
         Insert("public.order").

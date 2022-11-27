@@ -32,6 +32,7 @@ type (
 
         CreateUser(context.Context, string, string) (entity.User, error)
         GetUserWithLogin(context.Context, string) (entity.User, error)
+        CreateUserBalance(context.Context, int) error
 
         GetOrderList(context.Context, int) ([]entity.Order, error)
 

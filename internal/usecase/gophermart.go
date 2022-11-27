@@ -15,7 +15,7 @@ import (
 type GophermartUseCase struct {
     repo GophermartRepo
     webAPI GophermartWebAPI
-    orderCh chan <- string
+    orderCh chan <- string 
 }
 
 func New(r GophermartRepo, w GophermartWebAPI, workersCount int) *GophermartUseCase{
@@ -116,6 +116,10 @@ func (uc *GophermartUseCase) CreateNewUser(ctx context.Context, userAuth entity.
     user, err := uc.repo.CreateUser(ctx, userAuth.Login, passwordHash) 
     if err != nil {
         return entity.User{}, err
+    }
+    err = uc.repo.CreateUserBalance(ctx, user.ID)
+    if err != nil {
+        return entity.User{}, fmt.Errorf("GophermartUseCase - CreateNewUser - uc.repo.CreateUserBalance: %w", err)
     }
 
     return user, nil
