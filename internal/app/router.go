@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -111,6 +112,12 @@ func getCurrentBalance(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwt
             errorHandler(w, err)
             return
         }
+        fmt.Println("----")
+        fmt.Println("Current balance: ", balance.Current)
+        fmt.Println("Withdrawal balance: ", balance.Withdraw)
+        fmt.Println(balance)
+        fmt.Println(jsonResp)
+        fmt.Println("----")
 
         w.Header().Set("Content-Type", "application/json")
         w.Write(jsonResp)
