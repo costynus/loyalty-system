@@ -3,6 +3,7 @@ package webapi
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/costynus/loyalty-system/internal/entity"
 	"github.com/go-resty/resty/v2"
@@ -24,21 +25,25 @@ func New(client *resty.Client) *GophermartWebAPI {
 }
 
 
-func (w *GophermartWebAPI) GetOrderInfo(orderNumber string) (entity.Order, error) {
+func (w *GophermartWebAPI) GetOrderInfo(orderNumber string) (entity.Order, time.Duration, error) {
     var order entity.Order
     resp, err := w.client.
         R().
         SetResult(order).
         Get("/api/orders/" + orderNumber)
     if err != nil {
-        return entity.Order{}, fmt.Errorf("WebAPI - GetOrderInfo - w.client.R().Get: %w", err)
-    }
+        return entity.Order{}, 0, fmt.Errorf("WebAPI - GetOrderInfo - w.client.R().Get: %w", err)
+    } 
     switch resp.StatusCode() {
     case http.StatusInternalServerError:
-        return entity.Order{}, ErrInternalServerError
+        return entity.Order{}, 0, ErrInternalServerError
     case http.StatusTooManyRequests:
-        return entity.Order{}, ErrTooManyRequests
+        timeout, err := time.ParseDuration(resp.Header().Get("Retry-After") + "s")
+        if err != nil {
+            return entity.Order{}, 0, fmt.Errorf("WebAPI - GetOrderInfo - time.ParseDuration: %w", err)
+        }
+        return entity.Order{}, timeout, ErrTooManyRequests
     default:
-        return order, nil
+        return order, 0, nil
     }
 }

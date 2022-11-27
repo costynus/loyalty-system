@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/costynus/loyalty-system/internal/entity"
 	"github.com/costynus/loyalty-system/internal/usecase/repo"
@@ -37,7 +38,7 @@ func New(r GophermartRepo, w GophermartWebAPI, workersCount int) *GophermartUseC
 }
 
 func (uc *GophermartUseCase) ProcessOrder(orderNumber string) error {
-    order, err := uc.webAPI.GetOrderInfo(orderNumber)
+    order, timeout, err := uc.webAPI.GetOrderInfo(orderNumber)
     switch err {
     case webapi.ErrInternalServerError:
         err = uc.repo.UpdateOrderStatus(context.TODO(), orderNumber, "INVALID")
@@ -46,6 +47,8 @@ func (uc *GophermartUseCase) ProcessOrder(orderNumber string) error {
         }
         return err
     case webapi.ErrTooManyRequests:
+        time.Sleep(timeout)
+        uc.orderCh <- orderNumber
         return err
     default:
         if err != nil {

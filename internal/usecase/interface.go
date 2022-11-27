@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/costynus/loyalty-system/internal/entity"
 	"github.com/shopspring/decimal"
@@ -47,6 +48,6 @@ type (
     }
 
     GophermartWebAPI interface {
-        GetOrderInfo(string) (entity.Order, error)
+        GetOrderInfo(string) (entity.Order, time.Duration, error)
     }
 )
