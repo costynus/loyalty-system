@@ -83,7 +83,6 @@ func (uc *GophermartUseCase) ProcessOrder(orderNumber string) error {
             if err != nil {
                 return fmt.Errorf("GophermartUseCase - ProcessOrder - uc.repo.UpdateBalance: %w", err)
             }
-            uc.orderCh <- orderNumber
         case "INVALID":
             err = uc.repo.UpdateOrderStatus(context.TODO(), orderNumber, order.Status)
             if err != nil {

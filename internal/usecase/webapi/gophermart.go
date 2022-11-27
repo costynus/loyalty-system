@@ -26,10 +26,10 @@ func New(client *resty.Client) *GophermartWebAPI {
 
 
 func (w *GophermartWebAPI) GetOrderInfo(orderNumber string) (entity.Order, time.Duration, error) {
-    var order entity.Order
+    var order entity.OrderAddappter
     resp, err := w.client.
         R().
-        SetResult(order).
+        SetResult(&order).
         Get("/api/orders/" + orderNumber)
     if err != nil {
         return entity.Order{}, 0, fmt.Errorf("WebAPI - GetOrderInfo - w.client.R().Get: %w", err)
@@ -44,6 +44,10 @@ func (w *GophermartWebAPI) GetOrderInfo(orderNumber string) (entity.Order, time.
         }
         return entity.Order{}, timeout, ErrTooManyRequests
     default:
-        return order, 0, nil
+        return entity.Order{
+            Number: order.Number,
+            Status: order.Status,
+            Accrual: order.Accrual,
+        }, 0, nil
     }
 }
