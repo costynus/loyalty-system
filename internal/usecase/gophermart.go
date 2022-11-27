@@ -155,7 +155,7 @@ func (uc *GophermartUseCase) UploadOrder(ctx context.Context, userID int, orderN
         if err != nil {
             return false, fmt.Errorf("GophermartUseCase - UploadOrder - uc.repo.CreateOrder: %w", err)
         }
-        uc.orderCh <- orderNum
+        // uc.orderCh <- orderNum
     default:
         return false, fmt.Errorf("GophermartUseCase - UploadOrder - uc.repo.GetOrderByOrderNumber: %w", err)
 

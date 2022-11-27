@@ -93,6 +93,7 @@ func getCurrentBalance(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwt
         _, claims, _ := jwtauth.FromContext(r.Context())
         balance, err := uc.GetCurrentBalance(r.Context(), int(claims["user_id"].(float64)))
         if err != nil {
+            l.Error(err)
             errorHandler(w, err)
             return
         }
