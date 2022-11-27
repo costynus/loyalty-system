@@ -12,11 +12,13 @@ import (
 	"github.com/costynus/loyalty-system/pkg/postgres"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
+	"github.com/shopspring/decimal"
 )
 
 
 func Run(cfg *config.Config){
     l := logger.New(cfg.Log.Level)
+    decimal.MarshalJSONWithoutQuotes = cfg.App.MarshalJSONWithoutQuotes
 
     err := migration(cfg.PG.URL, cfg.PG.MigDir)
     if err != nil {

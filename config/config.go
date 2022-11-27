@@ -20,6 +20,7 @@ type (
 		Version string `env-required:"true" yaml:"version" env:"APP_VERSION"`
         AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
         WorkersCount int `env-required:"true" yaml:"workers_count"`
+        MarshalJSONWithoutQuotes bool `yaml:"marshal_json_without_quotes"`
 	}
 
     HTTP struct {
