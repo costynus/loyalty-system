@@ -15,7 +15,7 @@ type (
 
     Balance struct {
         Current decimal.Decimal `json:"current" db:"balance"`
-        Withdraw decimal.Decimal `json:"withdraw" db:"withdrawal"`
+        Withdraw decimal.Decimal `json:"withdrawn" db:"withdrawal"`
     }
 
     Withdraw struct {
