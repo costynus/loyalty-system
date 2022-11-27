@@ -61,6 +61,7 @@ func (r *GophermartRepo) GetOrderByOrderNumber(ctx context.Context, orderNumber 
         Select("order_number", "status", "accrual", "uploaded_at", "user_id").
         From("public.order").
         Where(sq.Eq{"order_number": orderNumber}).
+        OrderBy("uploaded_at").
         ToSql()
     if err != nil {
         return entity.Order{}, fmt.Errorf("GophermartRepo - GetOrderByOrderNumber - r.Builder: %w", err)
