@@ -126,7 +126,6 @@ func getOrderInfoList(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwta
             return
         }
 
-        fmt.Println(len(orderList))
         jsonResp, err := json.Marshal(orderList)
         if err != nil {
             l.Error(err)
