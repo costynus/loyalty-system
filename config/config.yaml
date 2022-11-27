@@ -2,7 +2,6 @@ app:
   name: 'gophermart'
   version: '0.0.1'
   workers_count: 5
-  accreal_system_address: http://127.0.0.1:8080
 
 http:
   address: ':8081'

@@ -18,8 +18,8 @@ type (
 	App struct {
 		Name    string `env-required:"true" yaml:"name" env:"NAME"`
 		Version string `env-required:"true" yaml:"version" env:"APP_VERSION"`
-        AccrualSystemAddress string `yaml:"accreal_system_address" env:"ACCRUAL_SYSTEM_ADDRESS"`
-        WorkersCount int `yaml:"workers_count"`
+        AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
+        WorkersCount int `env-required:"true" yaml:"workers_count"`
 	}
 
     HTTP struct {

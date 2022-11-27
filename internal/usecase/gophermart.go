@@ -166,36 +166,34 @@ func (uc *GophermartUseCase) GetCurrentBalance(ctx context.Context, userID int) 
 
 
 func (uc *GophermartUseCase) Withdraw(ctx context.Context, userID int, withdrawal entity.Withdrawal) error {
-    return uc.repo.WithinTransaction(ctx, func(txCtx context.Context) error {
-        balance, err := uc.repo.GetCurrentBalance(txCtx, userID)
-        if err != nil {
-            return err
-        }
+    balance, err := uc.repo.GetCurrentBalance(ctx, userID)
+    if err != nil {
+        return err
+    }
 
-        if withdrawal.Sum.GreaterThan(balance.Current) {
-            return ErrPaymentRequired
-        }
+    if withdrawal.Sum.GreaterThan(balance.Current) {
+        return ErrPaymentRequired
+    }
 
-        withdrawalList, err := uc.repo.GetWithdrawalList(txCtx, userID, withdrawal.Order)
-        if err != nil {
-            return err
-        }
-        if withdrawalList != nil {
-            return ErrUnprocessableEntity
-        }
+    withdrawalList, err := uc.repo.GetWithdrawalList(ctx, userID, withdrawal.Order)
+    if err != nil {
+        return err
+    }
+    if withdrawalList != nil {
+        return ErrUnprocessableEntity
+    }
 
-        err = uc.repo.UpdateBalance(txCtx, userID, balance.Current.Sub(withdrawal.Sum), balance.Withdraw.Add(withdrawal.Sum))
-        if err != nil {
-            return err
-        }
+    err = uc.repo.UpdateBalance(ctx, userID, balance.Current.Sub(withdrawal.Sum), balance.Withdraw.Add(withdrawal.Sum))
+    if err != nil {
+        return err
+    }
 
-        err = uc.repo.AddWithdrawal(txCtx, userID, withdrawal.Order, withdrawal.Sum)
-        if err != nil {
-            return err
-        }
+    err = uc.repo.AddWithdrawal(ctx, userID, withdrawal.Order, withdrawal.Sum)
+    if err != nil {
+        return err
+    }
 
-        return nil
-    })
+    return nil
 }
 
 

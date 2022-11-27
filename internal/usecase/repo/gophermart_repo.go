@@ -227,7 +227,7 @@ func (r *GophermartRepo) AddWithdrawal(ctx context.Context, userID int, orderNum
 
 func (r *GophermartRepo) GetWithdrawalList(ctx context.Context, userID int, orderNum string) ([]entity.Withdraw, error) {
     sql, args, err := r.Builder.
-        Select("order_num", "sum_number", "updated_at").
+        Select("order_number", "sum_number", "updated_at").
         From("public.withdrawal").
         Where(sq.Eq{"user_id": userID}).
         ToSql()

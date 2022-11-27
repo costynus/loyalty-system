@@ -51,6 +51,7 @@ func getWithdrawInfoList(uc usecase.Gophermart, l logger.Interface, tokenAuth *j
         _, claims, _ := jwtauth.FromContext(r.Context())
         withdrawList, err := uc.GetWithdrawList(r.Context(), int(claims["user_id"].(float64)))
         if err != nil {
+            l.Error(err)
             errorHandler(w, err)
             return
         }

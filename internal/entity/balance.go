@@ -19,7 +19,7 @@ type (
     }
 
     Withdraw struct {
-        Order string `json:"order" db:"order_num"`
+        Order string `json:"order" db:"order_number"`
         Sum decimal.Decimal `json:"sum" db:"sum_number"`
         ProcessedAt time.Time `json:"processed_at" db:"updated_at"` 
     }
