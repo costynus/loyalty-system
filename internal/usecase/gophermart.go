@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -185,12 +186,12 @@ func (uc *GophermartUseCase) Withdraw(ctx context.Context, userID int, withdrawa
         return ErrPaymentRequired
     }
 
-    withdrawalList, err := uc.repo.GetWithdrawalList(ctx, userID, withdrawal.Order)
+    _, err = uc.repo.GetOrderByOrderNumber(ctx, withdrawal.Order)   
     if err != nil {
+        if errors.Is(err, repo.ErrNotFound) {
+            return ErrUnprocessableEntity
+        }
         return err
-    }
-    if withdrawalList != nil {
-        return ErrUnprocessableEntity
     }
 
     err = uc.repo.UpdateBalance(ctx, userID, balance.Current.Sub(withdrawal.Sum), balance.Withdraw.Add(withdrawal.Sum))
