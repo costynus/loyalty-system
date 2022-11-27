@@ -189,6 +189,15 @@ func (uc *GophermartUseCase) Withdraw(ctx context.Context, userID int, withdrawa
         return ErrPaymentRequired
     }
 
+    fmt.Println("-----")
+    fmt.Println("withdrawal.Sum: ", withdrawal.Sum)
+    fmt.Println("current Balance: ", balance.Current)
+    fmt.Println("withdraw Balance: ", balance.Withdraw)
+    fmt.Println("-")
+    fmt.Println("balance after withdraw: ", balance.Current.Sub(withdrawal.Sum))
+    fmt.Println("wirhdraw Balance after withdraw: ", balance.Withdraw.Add(withdrawal.Sum))
+    fmt.Println("-----")
+
     err = uc.repo.UpdateBalance(ctx, userID, balance.Current.Sub(withdrawal.Sum), balance.Withdraw.Add(withdrawal.Sum))
     if err != nil {
         return err
