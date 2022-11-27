@@ -239,6 +239,9 @@ func (r *GophermartRepo) GetWithdrawalList(ctx context.Context, userID int, orde
     if err = pgxscan.Select(ctx, r.Pool, &dst, sql, args...); err != nil {
         return nil, fmt.Errorf("GophermartRepo - GetWithdrawalList - pgxscan.Select: %w", err)
     }
+    if len(dst) == 0 {
+        return nil, nil
+    }
 
     return dst, nil
 }

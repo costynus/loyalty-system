@@ -80,6 +80,7 @@ func withdraw(uc usecase.Gophermart, l logger.Interface, tokenAuth *jwtauth.JWTA
         _, claims, _ := jwtauth.FromContext(r.Context())
         err := uc.Withdraw(r.Context(), int(claims["user_id"].(float64)), withdrawal)
         if err != nil {
+            l.Error(err)
             errorHandler(w, err)
             return
         }
