@@ -1,0 +1,13 @@
+app:
+  name: 'gophermart'
+  version: '0.0.1'
+
+http:
+  address: ':8080'
+
+logger:
+  log_level: 'debug'
+  rollbar_env: 'gophermart'
+
+postgres:
+  pool_max: 2
