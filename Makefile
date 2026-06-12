@@ -19,3 +19,7 @@ compose-up-db:  ### up DB
 up:  ### Run in container
 	podman-compose up --build
 .PHONY: up
+
+psql-local-db:  ### connect to the local DB
+	psql -h 127.0.0.1 -p 5432 -U user -d postgres
+.PHONY: psql-local-db

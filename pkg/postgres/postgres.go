@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -69,37 +68,9 @@ func New(url string, opts ...Option) (*Postgres, error) {
 	return pg, nil
 }
 
-type txKey struct{}
-
-func injectTx(ctx context.Context, tx *pgx.Tx) context.Context {
-    return context.WithValue(ctx, txKey{}, tx)
-}
-
-func extractTx(ctx context.Context) *pgx.Tx {
-    if tx, ok := ctx.Value(txKey{}).(*pgx.Tx); ok {
-        return tx
-    }
-    return nil
-}
-
 // Close -.
 func (p *Postgres) Close() {
 	if p.Pool != nil {
 		p.Pool.Close()
 	}
-}
-
-func (p *Postgres) WithinTransaction(ctx context.Context, tFunc func(ctx context.Context) error) error{
-    tx, err := p.Pool.Begin(ctx)
-    if err != nil {
-        return fmt.Errorf("postgres - WithinTransaction - p.Pool.Begin: %w", err)
-    }
-
-    err = tFunc(injectTx(ctx, &tx))
-    if err != nil {
-        tx.Rollback(ctx)
-        return fmt.Errorf("postgres - WithinTransaction - tFunc: %w", err)
-    }
-    tx.Commit(ctx)
-    return nil
 }
